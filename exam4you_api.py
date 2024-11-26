@@ -97,7 +97,7 @@ def chunk_text(text, max_tokens=3000):
         chunks.append(chunk)
     return chunks
 
-def generate_mc_questions(content_text, model, client):
+def generate_mc_questions(content_text, model, openai):
     """
     Generates multiple-choice questions based on the provided content using OpenAI's API.
     """
@@ -115,7 +115,7 @@ def generate_mc_questions(content_text, model, client):
         {"role": "user", "content": user_prompt},
     ]
     try:
-        response = client.chat.completions.create(
+        response = openai.chat.completions.create(
             model=model,
             messages=messages,
             temperature=0.5,
@@ -361,7 +361,7 @@ def download_files_app():
 
 # --------------------------- Question Generation Functions ---------------------------
 
-def get_questions_from_image(image, system_prompt, user_prompt, model, client):
+def get_questions_from_image(image, system_prompt, user_prompt, model, openai):
     """
     Generates questions based on an image using OpenAI's API.
     """
@@ -387,7 +387,7 @@ def get_questions_from_image(image, system_prompt, user_prompt, model, client):
             }
         ]
 
-        response = client.chat.completions.create(
+        response = openai.chat.completions.create(
             model=model,
             messages=messages,
             max_tokens=16000,
@@ -399,7 +399,7 @@ def get_questions_from_image(image, system_prompt, user_prompt, model, client):
 
 # --------------------------- File Upload and Question Generation ---------------------------
 
-def pdf_upload_app(model, client):
+def pdf_upload_app(model, openai):
     """
     Handles file upload, content extraction, and question generation.
     """
@@ -432,7 +432,7 @@ def pdf_upload_app(model, client):
             chunks = chunk_text(content)
             questions = []
             for chunk in chunks:
-                response, error = generate_mc_questions(chunk, model, client)
+                response, error = generate_mc_questions(chunk, model, openai)
                 if error:
                     st.error(f"Error generating questions: {error}")
                     break
@@ -479,7 +479,7 @@ def pdf_upload_app(model, client):
             )
 
             st.info("Generating exam questions from the uploaded image. This may take a minute...")
-            response, error = get_questions_from_image(uploaded_file, system_prompt, user_prompt, model, client)
+            response, error = get_questions_from_image(uploaded_file, system_prompt, user_prompt, model, openai)
             if error:
                 st.error(error)
             else:
@@ -578,7 +578,7 @@ def main():
         st.warning("Please enter your OpenAI API Key in the sidebar to enable question generation.")
         return
 
-    # Initialize OpenAI client
+    # Initialize OpenAI openai
     try:
         # Set the OpenAI API key globally
         openai.api_key = api_key
@@ -591,7 +591,7 @@ def main():
 
     # Render the selected app mode
     if st.session_state.app_mode == "Upload File & Generate Questions":
-        pdf_upload_app(model, client)
+        pdf_upload_app(model, openai)
     elif st.session_state.app_mode == "Take Exam":
         if 'generated_questions' in st.session_state and st.session_state.generated_questions:
             mc_quiz_app()
