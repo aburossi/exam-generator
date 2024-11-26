@@ -580,12 +580,14 @@ def main():
 
     # Initialize OpenAI client
     try:
-        client = OpenAI(api_key=api_key)
+        # Set the OpenAI API key globally
+        openai.api_key = api_key
         # Test the API key by listing models (optional)
-        client.models.list()
+        models = openai.Model.list()
     except Exception as e:
         st.error(f"Invalid OpenAI API Key or connection error: {e}")
         return
+
 
     # Render the selected app mode
     if st.session_state.app_mode == "Upload File & Generate Questions":
