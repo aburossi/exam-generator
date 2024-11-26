@@ -1,5 +1,6 @@
-streamlit==1.22.0
-openai==0.27.8
-PyPDF2==3.0.1
-fpdf==1.7.2
-python-docx==0.8.11
+openai>=0.27.0
+streamlit
+PyPDF2
+fpdf
+python-docx
+Pillow
