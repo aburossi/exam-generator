@@ -108,7 +108,6 @@ def generate_docx(questions, include_answers=True):
     buffer.seek(0)
     return buffer.getvalue()
 
-
 # --------------------------- Main Application ---------------------------
 
 def main():
@@ -161,68 +160,68 @@ def main():
                             st.session_state.generated_questions = questions[:20]
                             st.success(f"Generated {len(questions[:20])} questions!")
 
-        elif mode == "Take Quiz":
-            questions = st.session_state.generated_questions
-            if questions:
-                if "quiz_answers" not in st.session_state:
-                    st.session_state.quiz_answers = [None] * len(questions)
-                    st.session_state.quiz_feedback = [None] * len(questions)
-                    st.session_state.correct_count = 0
-        
-                for i, q in enumerate(questions):
-                    st.write(f"### Q{i+1}: {q['question']}")
-                    # Validate choices
-                    if not isinstance(q.get("choices"), list) or not q["choices"]:
-                        st.error(f"Question {i+1} has invalid choices. Please regenerate the questions.")
-                        continue
-        
-                    user_choice = st.radio(
-                        f"Choose an answer for Question {i+1}:",
-                        q["choices"],
-                        index=-1,
-                        key=f"user_choice_{i}"
-                    )
-        
-                    if st.session_state.quiz_answers[i] is None and st.button(f"Submit Answer for Q{i+1}", key=f"submit_{i}"):
-                        st.session_state.quiz_answers[i] = user_choice
-                        if user_choice == q["correct_answer"]:
-                            st.session_state.quiz_feedback[i] = ("Correct", q.get("explanation", ""))
-                            st.session_state.correct_count += 1
-                        else:
-                            st.session_state.quiz_feedback[i] = (
-                                "Incorrect",
-                                f"The correct answer is: {q['correct_answer']}. Explanation: {q.get('explanation', '')}",
-                            )
-        
-                    if st.session_state.quiz_answers[i] is not None:
-                        feedback, explanation = st.session_state.quiz_feedback[i]
-                        if feedback == "Correct":
-                            st.success(f"✅ {feedback}!")
-                        else:
-                            st.error(f"❌ {feedback}")
-                        st.write(f"**Explanation:** {explanation}")
-        
-                if all(answer is not None for answer in st.session_state.quiz_answers):
-                    st.markdown("---")
-                    st.success(f"**Your Score: {st.session_state.correct_count} / {len(questions)}**")
-            else:
-                st.warning("No questions generated yet.")
-        
-            elif mode == "Download Exam":
-                questions = st.session_state.generated_questions
-                if questions:
-                    format_option = st.radio("Choose Format", ["PDF", "DOCX"])
-                    include_answers = st.checkbox("Include Answers", value=True)
-                    if st.button("Download"):
-                        if format_option == "PDF":
-                            file_data = generate_pdf(questions, include_answers)
-                            file_name = "exam.pdf"
-                        else:
-                            file_data = generate_docx(questions, include_answers)
-                            file_name = "exam.docx"
-                        st.download_button("Download", data=file_data, file_name=file_name)
+    elif mode == "Take Quiz":
+        questions = st.session_state.generated_questions
+        if questions:
+            if "quiz_answers" not in st.session_state:
+                st.session_state.quiz_answers = [None] * len(questions)
+                st.session_state.quiz_feedback = [None] * len(questions)
+                st.session_state.correct_count = 0
+
+            for i, q in enumerate(questions):
+                st.write(f"### Q{i+1}: {q['question']}")
+                # Validate choices
+                if not isinstance(q.get("choices"), list) or not q["choices"]:
+                    st.error(f"Question {i+1} has invalid choices. Please regenerate the questions.")
+                    continue
+
+                user_choice = st.radio(
+                    f"Choose an answer for Question {i+1}:",
+                    q["choices"],
+                    index=-1,
+                    key=f"user_choice_{i}"
+                )
+
+                if st.session_state.quiz_answers[i] is None and st.button(f"Submit Answer for Q{i+1}", key=f"submit_{i}"):
+                    st.session_state.quiz_answers[i] = user_choice
+                    if user_choice == q["correct_answer"]:
+                        st.session_state.quiz_feedback[i] = ("Correct", q.get("explanation", ""))
+                        st.session_state.correct_count += 1
+                    else:
+                        st.session_state.quiz_feedback[i] = (
+                            "Incorrect",
+                            f"The correct answer is: {q['correct_answer']}. Explanation: {q.get('explanation', '')}",
+                        )
+
+                if st.session_state.quiz_answers[i] is not None:
+                    feedback, explanation = st.session_state.quiz_feedback[i]
+                    if feedback == "Correct":
+                        st.success(f"✅ {feedback}!")
+                    else:
+                        st.error(f"❌ {feedback}")
+                    st.write(f"**Explanation:** {explanation}")
+
+            if all(answer is not None for answer in st.session_state.quiz_answers):
+                st.markdown("---")
+                st.success(f"**Your Score: {st.session_state.correct_count} / {len(questions)}**")
+        else:
+            st.warning("No questions generated yet.")
+
+    elif mode == "Download Exam":
+        questions = st.session_state.generated_questions
+        if questions:
+            format_option = st.radio("Choose Format", ["PDF", "DOCX"])
+            include_answers = st.checkbox("Include Answers", value=True)
+            if st.button("Download"):
+                if format_option == "PDF":
+                    file_data = generate_pdf(questions, include_answers)
+                    file_name = "exam.pdf"
                 else:
-                    st.warning("No questions generated yet.")
+                    file_data = generate_docx(questions, include_answers)
+                    file_name = "exam.docx"
+                st.download_button("Download", data=file_data, file_name=file_name)
+        else:
+            st.warning("No questions generated yet.")
 
 if __name__ == "__main__":
     main()
