@@ -4,23 +4,15 @@ import json
 from PyPDF2 import PdfReader
 from fpdf import FPDF
 from docx import Document
-from docx.shared import Pt
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from PIL import Image
-import io
-import base64
-from io import BytesIO
 from openai import OpenAI
 
-# Set Streamlit page configuration
 st.set_page_config(page_title="Exam Creator", page_icon="📝", layout="wide")
 
-__version__ = "1.5.0"  # Updated version number
+__version__ = "1.6.0"
 
 # --------------------------- Helper Functions ---------------------------
 
 def extract_text_from_pdf(pdf_file):
-    """Extracts text content from an uploaded PDF file."""
     try:
         pdf_reader = PdfReader(pdf_file)
         text = ""
@@ -34,7 +26,6 @@ def extract_text_from_pdf(pdf_file):
         return ""
 
 def extract_text_from_docx(file):
-    """Extracts text from a DOCX file."""
     try:
         doc = Document(file)
         text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
@@ -43,46 +34,12 @@ def extract_text_from_docx(file):
         st.error(f"Error extracting text from DOCX: {e}")
         return ""
 
-def process_image(file):
-    """Processes an uploaded image and converts it to a Base64-encoded string."""
-    try:
-        image = Image.open(file)
-        if image.mode != "RGB":
-            image = image.convert("RGB")
-        max_size = 1000
-        if max(image.size) > max_size:
-            image.thumbnail((max_size, max_size))
-        buffered = io.BytesIO()
-        image.save(buffered, format="JPEG")
-        image_bytes = buffered.getvalue()
-        return base64.b64encode(image_bytes).decode("utf-8")
-    except Exception as e:
-        st.error(f"Error processing image: {e}")
-        return None
-
-def chunk_text(text, max_tokens=3000):
-    """Splits the extracted text into manageable chunks."""
-    sentences = text.split('. ')
-    chunks = []
-    chunk = ""
-    for sentence in sentences:
-        if len(chunk) + len(sentence) > max_tokens:
-            chunks.append(chunk)
-            chunk = sentence + ". "
-        else:
-            chunk += sentence + ". "
-    if chunk:
-        chunks.append(chunk)
-    return chunks
-
 def generate_mc_questions(client, content_text, model):
-    """Generates multiple-choice questions using OpenAI's API."""
     system_prompt = (
         "You are an educator tasked with creating a high school-level multiple-choice exam. "
-        "Use the given content to generate single-choice questions. "
-        "Each question must have one correct answer. Generate as many as necessary, up to 20 questions. "
-        "Return the output as valid JSON with the structure: [{'question': '...', 'choices': ['...'], "
-        "'correct_answer': '...', 'explanation': '...'}, ...]."
+        "Use the given content to generate single-choice questions. Each question must have one correct answer. "
+        "Generate up to 20 questions as valid JSON with this structure: "
+        "[{'question': '...', 'choices': ['...'], 'correct_answer': '...', 'explanation': '...'}, ...]."
     )
     user_prompt = f"Content:\n\n{content_text}\n\nGenerate exam questions."
 
@@ -103,7 +60,6 @@ def generate_mc_questions(client, content_text, model):
         return None, f"Error generating questions: {e}"
 
 def parse_generated_questions(response):
-    """Parses the JSON response from OpenAI into Python objects."""
     try:
         json_start = response.find('[')
         json_end = response.rfind(']') + 1
@@ -117,45 +73,6 @@ def parse_generated_questions(response):
     except Exception as e:
         return None, f"Unexpected error: {str(e)}"
 
-# --------------------------- PDF and DOCX Generation ---------------------------
-
-def generate_pdf(questions, include_answers=True):
-    """Generates a PDF file with exam questions."""
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font('Arial', 'B', 16)
-    pdf.cell(0, 10, 'Generated Exam', 0, 1, 'C')
-
-    pdf.set_font('Arial', '', 12)
-    for i, q in enumerate(questions):
-        pdf.cell(0, 10, f"Q{i+1}: {q['question']}", 0, 1)
-        for choice in q['choices']:
-            pdf.cell(0, 10, f" - {choice}", 0, 1)
-        if include_answers:
-            pdf.cell(0, 10, f"Correct Answer: {q['correct_answer']}", 0, 1)
-            pdf.cell(0, 10, f"Explanation: {q['explanation']}", 0, 1)
-        pdf.ln(10)
-
-    return pdf.output(dest="S").encode("latin1")
-
-def generate_docx(questions, include_answers=True):
-    """Generates a DOCX file with exam questions."""
-    doc = Document()
-    doc.add_heading('Generated Exam', level=1)
-    for i, q in enumerate(questions):
-        doc.add_heading(f"Q{i+1}: {q['question']}", level=2)
-        for choice in q['choices']:
-            doc.add_paragraph(choice, style='List Bullet')
-        if include_answers:
-            doc.add_paragraph(f"Correct Answer: {q['correct_answer']}")
-            doc.add_paragraph(f"Explanation: {q['explanation']}")
-        doc.add_paragraph()
-
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-    return buffer.getvalue()
-
 # --------------------------- Main Application ---------------------------
 
 def main():
@@ -164,7 +81,6 @@ def main():
 
     if "client" not in st.session_state:
         st.session_state.client = None
-
     if "generated_questions" not in st.session_state:
         st.session_state.generated_questions = []
 
@@ -198,29 +114,56 @@ def main():
                 st.text_area("Extracted Content", content[:500] + "...", height=200)
                 if st.button("Generate Questions"):
                     client = st.session_state.client
-                    chunks = chunk_text(content)
-                    questions = []
-                    for chunk in chunks:
-                        response, error = generate_mc_questions(client, chunk, model)
-                        if error:
-                            st.error(error)
-                            break
-                        parsed_questions, parse_error = parse_generated_questions(response)
+                    response, error = generate_mc_questions(client, content, model)
+                    if error:
+                        st.error(error)
+                    else:
+                        questions, parse_error = parse_generated_questions(response)
                         if parse_error:
                             st.error(parse_error)
-                            break
-                        questions.extend(parsed_questions)
-                        if len(questions) >= 20:
-                            break
-                    st.session_state.generated_questions = questions[:20]
-                    st.success(f"Generated {len(questions[:20])} questions!")
+                        else:
+                            st.session_state.generated_questions = questions[:20]
+                            st.success(f"Generated {len(questions[:20])} questions!")
 
     elif mode == "Take Quiz":
         questions = st.session_state.generated_questions
         if questions:
+            if "quiz_answers" not in st.session_state:
+                st.session_state.quiz_answers = [None] * len(questions)
+                st.session_state.quiz_feedback = [None] * len(questions)
+                st.session_state.correct_count = 0
+
             for i, q in enumerate(questions):
-                st.write(f"Q{i+1}: {q['question']}")
-                st.radio("Choose an answer:", q['choices'], key=f"q_{i}")
+                st.write(f"### Q{i+1}: {q['question']}")
+                user_choice = st.radio(
+                    f"Choose an answer for Question {i+1}:",
+                    q["choices"],
+                    index=-1,
+                    key=f"user_choice_{i}"
+                )
+
+                if st.session_state.quiz_answers[i] is None and st.button(f"Submit Answer for Q{i+1}", key=f"submit_{i}"):
+                    st.session_state.quiz_answers[i] = user_choice
+                    if user_choice == q["correct_answer"]:
+                        st.session_state.quiz_feedback[i] = ("Correct", q.get("explanation", ""))
+                        st.session_state.correct_count += 1
+                    else:
+                        st.session_state.quiz_feedback[i] = (
+                            "Incorrect",
+                            f"The correct answer is: {q['correct_answer']}. Explanation: {q.get('explanation', '')}",
+                        )
+
+                if st.session_state.quiz_answers[i] is not None:
+                    feedback, explanation = st.session_state.quiz_feedback[i]
+                    if feedback == "Correct":
+                        st.success(f"✅ {feedback}!")
+                    else:
+                        st.error(f"❌ {feedback}")
+                    st.write(f"**Explanation:** {explanation}")
+
+            if all(answer is not None for answer in st.session_state.quiz_answers):
+                st.markdown("---")
+                st.success(f"**Your Score: {st.session_state.correct_count} / {len(questions)}**")
         else:
             st.warning("No questions generated yet.")
 
