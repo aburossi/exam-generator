@@ -208,21 +208,21 @@ def main():
             else:
                 st.warning("No questions generated yet.")
         
-                elif mode == "Download Exam":
-                    questions = st.session_state.generated_questions
-                    if questions:
-                        format_option = st.radio("Choose Format", ["PDF", "DOCX"])
-                        include_answers = st.checkbox("Include Answers", value=True)
-                        if st.button("Download"):
-                            if format_option == "PDF":
-                                file_data = generate_pdf(questions, include_answers)
-                                file_name = "exam.pdf"
-                            else:
-                                file_data = generate_docx(questions, include_answers)
-                                file_name = "exam.docx"
-                            st.download_button("Download", data=file_data, file_name=file_name)
-                    else:
-                        st.warning("No questions generated yet.")
+            elif mode == "Download Exam":
+                questions = st.session_state.generated_questions
+                if questions:
+                    format_option = st.radio("Choose Format", ["PDF", "DOCX"])
+                    include_answers = st.checkbox("Include Answers", value=True)
+                    if st.button("Download"):
+                        if format_option == "PDF":
+                            file_data = generate_pdf(questions, include_answers)
+                            file_name = "exam.pdf"
+                        else:
+                            file_data = generate_docx(questions, include_answers)
+                            file_name = "exam.docx"
+                        st.download_button("Download", data=file_data, file_name=file_name)
+                else:
+                    st.warning("No questions generated yet.")
 
 if __name__ == "__main__":
     main()
