@@ -170,7 +170,7 @@ def main():
 
     st.sidebar.title("Configuration")
     api_key = st.sidebar.text_input("OpenAI API Key", type="password")
-    model = st.sidebar.selectbox("Model", ["gpt-4", "gpt-3.5-turbo"], index=0)
+    model = st.sidebar.selectbox("Model", ["gpt-4o-mini", "gpt-4o"], index=0)
 
     if api_key:
         try:
