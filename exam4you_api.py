@@ -167,21 +167,21 @@ def main():
                 st.session_state.quiz_answers = [None] * len(questions)
                 st.session_state.quiz_feedback = [None] * len(questions)
                 st.session_state.correct_count = 0
-
+        
             for i, q in enumerate(questions):
                 st.write(f"### Q{i+1}: {q['question']}")
                 # Validate choices
                 if not isinstance(q.get("choices"), list) or not q["choices"]:
                     st.error(f"Question {i+1} has invalid choices. Please regenerate the questions.")
                     continue
-
+        
+                # Ensure a default value for the radio button
                 user_choice = st.radio(
                     f"Choose an answer for Question {i+1}:",
-                    q["choices"],
-                    index=-1,
+                    options=q["choices"],
                     key=f"user_choice_{i}"
                 )
-
+        
                 if st.session_state.quiz_answers[i] is None and st.button(f"Submit Answer for Q{i+1}", key=f"submit_{i}"):
                     st.session_state.quiz_answers[i] = user_choice
                     if user_choice == q["correct_answer"]:
@@ -192,7 +192,7 @@ def main():
                             "Incorrect",
                             f"The correct answer is: {q['correct_answer']}. Explanation: {q.get('explanation', '')}",
                         )
-
+        
                 if st.session_state.quiz_answers[i] is not None:
                     feedback, explanation = st.session_state.quiz_feedback[i]
                     if feedback == "Correct":
@@ -200,7 +200,7 @@ def main():
                     else:
                         st.error(f"❌ {feedback}")
                     st.write(f"**Explanation:** {explanation}")
-
+        
             if all(answer is not None for answer in st.session_state.quiz_answers):
                 st.markdown("---")
                 st.success(f"**Your Score: {st.session_state.correct_count} / {len(questions)}**")
