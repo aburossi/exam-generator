@@ -115,13 +115,12 @@ def generate_mc_questions(content_text, model, openai):
         {"role": "user", "content": user_prompt},
     ]
     try:
-        response = openai.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model=model,
             messages=messages,
             temperature=0.5,
             max_tokens=16000
         )
-        # Accessing content using attribute notation
         return response.choices[0].message.content, None
     except Exception as e:
         return None, f"Error generating questions: {e}"
