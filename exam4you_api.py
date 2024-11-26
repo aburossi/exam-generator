@@ -122,8 +122,11 @@ def generate_mc_questions(content_text, model, openai):
             max_tokens=16000
         )
         return response.choices[0].message.content, None
+    except AttributeError as e:
+        return None, f"Library incompatibility detected: {e}. Ensure the OpenAI library version is >= 0.27.0."
     except Exception as e:
         return None, f"Error generating questions: {e}"
+
 
 def parse_generated_questions(response):
     """
