@@ -10,7 +10,7 @@ from PIL import Image
 import io
 import base64
 from io import BytesIO
-from openai import OpenAI
+import openai
 
 # Set Streamlit page configuration
 st.set_page_config(page_title="Exam Creator", page_icon="📝", layout="wide")
